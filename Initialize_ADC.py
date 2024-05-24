@@ -1,9 +1,11 @@
-# Initialize Analog to Digital Converter (ADC) - MCP3008
+# Installing and enabling SPI
+# SPI: Serial Peripheral Interface
 
 # Import library for MCP3008 
 import Adafruit_MCP3008
 
-# MCP3008 Serial Peripheral Interface (SPI) Configuration
+# MCP3008 SPI Configuration
+
 # Serial Clock
 CLK  = 23
 
@@ -17,5 +19,3 @@ DIN = 19
 CS   = 25
 
 MCP = Adafruit_MCP3008.MCP3008(clk=CLK, cs=CS, miso=MISO, mosi=MOSI)
-
-
