@@ -33,7 +33,7 @@ def read_voltage():
     voltage = (digital_value / 1023.0) * vref
 
     # Scale voltage to the transducer's range
-    scaled_voltage = (voltage / (20 - 4)) * voltage_range
+    scaled_voltage = (voltage / (5.0 - 1.0)) * voltage_range
 
     return scaled_voltage
 
