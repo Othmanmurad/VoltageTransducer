@@ -21,7 +21,10 @@ adc_channel = 0  # Analog input channel (0 to 7)
 vref = 5.0  # Reference voltage (in volts)
 
 # VACT500-42L configuration
-voltage_range = 500  # Voltage transducer range (500V for VACT500-42L)
+input_voltage = 240  # Input voltage (in volts)
+input_voltage_range = 500  # VACT500-42L input voltage range (in volts)
+output_current_range = 16  # VACT500-42L output current range (in mA)
+min_output_current = 4  # VACT500-42L minimum output current (in mA)
 resistor_value = 250  # Current-to-voltage conversion resistor value (in ohms)
 
 def read_voltage():
@@ -32,10 +35,16 @@ def read_voltage():
     # Convert digital value to voltage
     voltage = (digital_value / 1023.0) * vref
 
-    # Scale voltage to the transducer's range
-    scaled_voltage = (voltage / (5.0 - 1.0)) * voltage_range
+    # Calculate the output current based on the input voltage
+    output_current = (input_voltage / input_voltage_range) * output_current_range + min_output_current
 
-    return scaled_voltage
+    # Calculate the voltage across the resistor
+    resistor_voltage = output_current * resistor_value / 1000  # Convert mA to A
+
+    # Scale the resistor voltage to the expected output voltage
+    expected_voltage = (resistor_voltage / (vref - (min_output_current * resistor_value / 1000))) * input_voltage_range
+
+    return expected_voltage
 
 # CSV file configuration
 csv_file = 'voltage_data.csv'
