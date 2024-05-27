@@ -10,7 +10,7 @@ spi = spidev.SpiDev()
 #Opening SPI_PORT 0,and SPI_DEVICE 0
 spi.open(0,0)
 
-def readadc(num):
+def readadc(adcnum):
     if adcnum > 7 or adcnum < 0:
         return -1
     r = spi.xfer([1, 8+adcnum << 4, 0])
