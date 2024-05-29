@@ -1,4 +1,5 @@
 import time
+import datetime
 import spidev
 
 # SPI bus and device configuration
@@ -44,9 +45,11 @@ def read_voltage():
 
     return scaled_voltage
 
-# Continuously read the voltage and print the scaled value
+# Continuously read the voltage and print the scaled value with timestamp
 while True:
     voltage = read_voltage()
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print("Timestamp: ", timestamp)
     print("Scaled Voltage: {:.2f} V".format(voltage))
     print("---")
     time.sleep(1)  # Delay between readings (in seconds)
