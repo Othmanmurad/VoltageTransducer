@@ -31,8 +31,12 @@ def read_voltage():
     # Convert digital value to voltage
     voltage = (digital_value / 1023.0) * vref
 
+    # Print raw ADC value and voltage before scaling
+    print("Raw ADC value: ", digital_value)
+    print("Voltage before scaling: {:.2f} V".format(voltage))
+
     # Scale the voltage to the transducer's range
-    scaled_voltage = (voltage - 1) * (voltage_range / 4)
+    scaled_voltage = (voltage / (5.0 - 1.0)) * voltage_range
 
     # Handle negative scaled values
     if scaled_voltage < 0:
@@ -43,5 +47,6 @@ def read_voltage():
 # Continuously read the voltage and print the scaled value
 while True:
     voltage = read_voltage()
-    print("Voltage: {:.2f} V".format(voltage))
+    print("Scaled Voltage: {:.2f} V".format(voltage))
+    print("---")
     time.sleep(1)  # Delay between readings (in seconds)
