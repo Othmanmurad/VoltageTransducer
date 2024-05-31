@@ -1,23 +1,29 @@
-# SPDX-FileCopyrightText: 2021 ladyada for Adafruit Industries
-# SPDX-License-Identifier: MIT
+import time
+from gpiozero import MCP3008
 
-import busio
-import digitalio
-import board
-import adafruit_mcp3xxx.mcp3008 as MCP
-from adafruit_mcp3xxx.analog_in import AnalogIn
+class MCP3008Reader:
+    def __init__(self, channel, vref=4.4):
+        self.channel = channel
+        self.adc = MCP3008(channel=channel)
+        self.vref = vref
 
-# create the spi bus
-spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
+    def get_voltage(self):
+        raw_value = self.adc.value  # Read the raw ADC value (0 to 1)
+        voltage = raw_value * self.vref  # Convert to actual voltage using Vref
+        return voltage
 
-# create the cs (chip select)
-cs = digitalio.DigitalInOut(board.D5)
+def main():
+    # Initialize the MCP3008 reader for the desired channel (e.g., channel 0)
+    voltage_reader = MCP3008Reader(channel=0, vref=4.4)  # Adjust Vref if necessary
 
-# create the mcp object
-mcp = MCP.MCP3008(spi, cs)
+    try:
+        while True:
+            voltage = voltage_reader.get_voltage()
+            print(f"Voltage: {voltage:.2f} V")
+            time.sleep(1)  # Wait for 1 second before taking the next reading
 
-# create an analog input channel on pin 0
-chan = AnalogIn(mcp, MCP.P0)
+    except KeyboardInterrupt:
+        print("Measurement stopped by user.")
 
-print("Raw ADC Value: ", chan.value)
-print("ADC Voltage: " + str(chan.voltage) + "V")
+if __name__ == "__main__":
+    main()
