@@ -1,39 +1,38 @@
-# Simple example of reading the MCP3008 analog input channels and printing
-# them all out.
-# Author: Tony DiCola
-# License: Public Domain
+#pip install gpiozero pandas openpyxl
+
+
 import time
+import pandas as pd
+from gpiozero import MCP3008
 
-# Import SPI library (for hardware SPI) and MCP3008 library.
-import Adafruit_GPIO.SPI as SPI
-import Adafruit_MCP3008
+# Create an instance of MCP3008 class with the channel number
+adc = MCP3008(channel=0)  # Assuming the voltage is connected to channel 0
+voltage_ref = 3.3  # Reference voltage for the ADC
+sampling_interval = 1  # Sampling interval in seconds
 
+# Create an empty DataFrame to store the voltage readings and timestamps
+data = pd.DataFrame(columns=["Timestamp", "Voltage (V)"])
 
-# Software SPI configuration:
-CLK  = 18
-MISO = 23
-MOSI = 24
-CS   = 25
-mcp = Adafruit_MCP3008.MCP3008(clk=CLK, cs=CS, miso=MISO, mosi=MOSI)
+try:
+    while True:
+        # Read the voltage value from the MCP3008 ADC
+        voltage = adc.value * voltage_ref  # Multiply by the reference voltage (3.3V)
+        
+        # Get the current timestamp
+        timestamp = pd.Timestamp.now()
+        
+        # Append the new data to the DataFrame
+        data = data.append({"Timestamp": timestamp, "Voltage (V)": voltage}, ignore_index=True)
+        
+        # Print the voltage value and timestamp
+        print(f"Timestamp: {timestamp}, Voltage: {voltage:.2f} V")
+        
+        # Save the DataFrame to an Excel sheet
+        data.to_excel("voltage_readings.xlsx", index=False)
+        
+        # Wait for the specified interval before taking the next reading
+        time.sleep(sampling_interval)
 
-# Hardware SPI configuration:
-# SPI_PORT   = 0
-# SPI_DEVICE = 0
-# mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE))
-
-
-print('Reading MCP3008 values, press Ctrl-C to quit...')
-# Print nice channel column headers.
-print('| {0:>4} | {1:>4} | {2:>4} | {3:>4} | {4:>4} | {5:>4} | {6:>4} | {7:>4} |'.format(*range(8)))
-print('-' * 57)
-# Main program loop.
-while True:
-    # Read all the ADC channel values in a list.
-    values = [0]*8
-    for i in range(8):
-        # The read_adc function will get the value of the specified channel (0-7).
-        values[i] = mcp.read_adc(i)
-    # Print the ADC values.
-    print('| {0:>4} | {1:>4} | {2:>4} | {3:>4} | {4:>4} | {5:>4} | {6:>4} | {7:>4} |'.format(*values))
-    # Pause for half a second.
-    time.sleep(0.5)
+except KeyboardInterrupt:
+    # If the user interrupts (Ctrl+C), exit the loop
+    print("\nMeasurement stopped by user.")
