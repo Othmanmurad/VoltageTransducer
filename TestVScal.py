@@ -8,6 +8,9 @@ class MCP3008Reader:
         self.adc = MCP3008(channel=channel)
         self.vref = vref
 
+    def get_raw_value(self):
+        return self.adc.value
+
     def get_voltage(self):
         raw_value = self.adc.value  # Read the raw ADC value (0 to 1)
         voltage = raw_value * self.vref  # Convert to actual voltage using Vref
@@ -15,7 +18,6 @@ class MCP3008Reader:
 
     def scale_voltage(self, voltage):
         # Scale the voltage from 1-5V range to 0-10V range
-        # (voltage - 1V) maps 1-5V to 0-4V, multiply by 2.5 to get 0-10V
         if voltage < 1:
             return 0.0
         scaled_voltage = (voltage - 1) * (10 / 4)
@@ -26,22 +28,23 @@ def main():
     voltage_reader = MCP3008Reader(channel=0, vref=5.0)
 
     # Create an empty DataFrame to store the voltage readings and timestamps
-    data = pd.DataFrame(columns=["Timestamp", "Scaled Voltage (V)"])
+    data = pd.DataFrame(columns=["Timestamp", "Raw Value", "Voltage (V)", "Scaled Voltage (V)"])
 
     try:
         while True:
+            raw_value = voltage_reader.get_raw_value()
             voltage = voltage_reader.get_voltage()
             scaled_voltage = voltage_reader.scale_voltage(voltage)
             timestamp = pd.Timestamp.now()
             
             # Append the new data to the DataFrame
-            data = data.append({"Timestamp": timestamp, "Scaled Voltage (V)": scaled_voltage}, ignore_index=True)
+            data = data.append({"Timestamp": timestamp, "Raw Value": raw_value, "Voltage (V)": voltage, "Scaled Voltage (V)": scaled_voltage}, ignore_index=True)
             
-            # Print the voltage value and timestamp
-            print(f"Timestamp: {timestamp}, Scaled Voltage: {scaled_voltage:.2f} V")
+            # Print the raw value, voltage value, and scaled voltage with timestamp
+            print(f"Timestamp: {timestamp}, Raw Value: {raw_value:.2f}, Voltage: {voltage:.2f} V, Scaled Voltage: {scaled_voltage:.2f} V")
             
             # Save the DataFrame to an Excel sheet
-            data.to_excel("scaled_voltage_readings.xlsx", index=False)
+            data.to_excel("voltage_readings_debug.xlsx", index=False)
             
             # Wait for the specified interval before taking the next reading
             time.sleep(1)
