@@ -1,6 +1,7 @@
 import time
 import board
 import busio
+import digitalio
 import adafruit_mcp3xxx.mcp3008 as MCP
 from adafruit_mcp3xxx.analog_in import AnalogIn
 
@@ -8,7 +9,7 @@ from adafruit_mcp3xxx.analog_in import AnalogIn
 spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
 
 # Create the cs (chip select)
-cs = board.D5
+cs = digitalio.DigitalInOut(board.D5)
 
 # Create the mcp object
 mcp = MCP.MCP3008(spi, cs)
