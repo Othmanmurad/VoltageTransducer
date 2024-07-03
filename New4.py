@@ -3,7 +3,31 @@ from gpiozero import MCP3008
 import numpy as np
 from datetime import datetime
 
-# ... (keep the previous setup code)
+# Create an analog input channel on pin 0
+adc = MCP3008(channel=0)
+
+# Voltage transducer specifications
+V_IN_MAX = 500  # Maximum input voltage of VACT500-42L
+V_OUT_MAX = 10  # Maximum output voltage of VACT500-42L
+
+# RMS calculation parameters
+FREQUENCY = 60  # AC frequency (Hz)
+SAMPLES_PER_CYCLE = 100  # Number of samples to take per AC cycle
+
+def read_voltage():
+    # Read the raw ADC value (0 to 1)
+    raw_value = adc.value
+    
+    # Convert raw value to transducer output voltage (0-10V range)
+    transducer_voltage = raw_value * V_OUT_MAX
+    
+    # Scale the measured voltage to the actual input voltage
+    actual_voltage = transducer_voltage * (V_IN_MAX / V_OUT_MAX)
+    
+    return transducer_voltage, actual_voltage
+
+def calculate_rms(voltages):
+    return np.sqrt(np.mean(np.array(voltages)**2))
 
 def main():
     timestamps = []
