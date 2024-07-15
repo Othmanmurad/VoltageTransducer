@@ -41,22 +41,20 @@ def scale_voltage(resistor_voltage):
     return max(0, min(scaled_voltage, 500))  # Clamp between 0 and 500V
 
 def read_voltage():
-    # Read multiple ADC values and calculate the average
     adc_values = []
     for _ in range(10):
         adc_values.append(read_adc(adc_channel))
-        time.sleep(0.01)  # Small delay between readings
+        time.sleep(0.01)
 
     avg_adc_value = sum(adc_values) / len(adc_values)
-
-    # Convert average ADC value to voltage
     resistor_voltage = (avg_adc_value / 1023.0) * vref
-
-    # Calculate current from voltage using Ohm's law
     current = resistor_voltage / resistor_value * 1000  # Convert to mA
-
-    # Scale the voltage using the new scaling function
     scaled_voltage = scale_voltage(resistor_voltage)
+
+    print(f"Debug: ADC value = {avg_adc_value:.2f}")
+    print(f"Debug: Resistor voltage = {resistor_voltage:.4f}V")
+    print(f"Debug: Calculated current = {current:.4f}mA")
+    print(f"Debug: Scaled voltage = {scaled_voltage:.2f}V")
 
     return avg_adc_value, resistor_voltage, current, scaled_voltage
 
