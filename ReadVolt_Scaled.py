@@ -35,36 +35,36 @@ def read_adc(channel):
     digital_value = ((adc_value[1] & 3) << 8) + adc_value[2]
     return digital_value
 
-def scale_voltage(resistor_voltage):
-    # Apply scaling factor based on Lewis-Meo thesis
-    scaled_voltage = (500 / (5 - 1)) * (resistor_voltage - 1)
-    return max(0, min(scaled_voltage, 500))  # Clamp between 0 and 500V
-
 def read_voltage():
+    # Read multiple ADC values and calculate the average
     adc_values = []
     for _ in range(10):
         adc_values.append(read_adc(adc_channel))
-        time.sleep(0.01)
+        time.sleep(0.01)  # Small delay between readings
 
     avg_adc_value = sum(adc_values) / len(adc_values)
+
+    # Convert average ADC value to voltage
     resistor_voltage = (avg_adc_value / 1023.0) * vref
+
+    # Calculate current from voltage using Ohm's law
     current = resistor_voltage / resistor_value * 1000  # Convert to mA
-    scaled_voltage = scale_voltage(resistor_voltage)
 
-    print(f"Debug: ADC value = {avg_adc_value:.2f}")
-    print(f"Debug: Resistor voltage = {resistor_voltage:.4f}V")
-    print(f"Debug: Calculated current = {current:.4f}mA")
-    print(f"Debug: Scaled voltage = {scaled_voltage:.2f}V")
+    # Scale the current to the measured voltage range (0-500V)
+    measured_voltage = (current - current_min) / (current_max - current_min) * voltage_range
 
-    return avg_adc_value, resistor_voltage, current, scaled_voltage
+    # Scale the measured voltage to 0-10V range
+    scaled_voltage = (measured_voltage / voltage_range) * 10
+
+    return avg_adc_value, resistor_voltage, current, measured_voltage, scaled_voltage
 
 # Create a table to store the readings
 table_data = []
-headers = ["Timestamp", "ADC Value", "Resistor Voltage (V)", "Current (mA)", "Measured Voltage (V)"]
+headers = ["Timestamp", "ADC Value", "Resistor Voltage (V)", "Current (mA)", "Measured Voltage (V)", "Scaled Voltage (0-10V)"]
 
 try:
     while True:
-        avg_adc_value, resistor_voltage, current, scaled_voltage = read_voltage()
+        avg_adc_value, resistor_voltage, current, measured_voltage, scaled_voltage = read_voltage()
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
         # Add the readings to the table
@@ -73,13 +73,15 @@ try:
             f"{avg_adc_value:.2f}",
             f"{resistor_voltage:.4f}",
             f"{current:.4f}",
-            f"{scaled_voltage:.2f}"
+            f"{measured_voltage:.2f}",
+            f"{scaled_voltage:.4f}"
         ])
 
         # Print the table
         print(tabulate(table_data[-10:], headers, tablefmt="grid"))  # Show last 10 readings
         print(f"Current range: {current_min}-{current_max} mA")
         print(f"Voltage range: 0-{voltage_range} V")
+        print(f"Scaled voltage range: 0-10 V")
         
         # Check if current is within the expected range
         if current_min <= current <= current_max:
