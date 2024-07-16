@@ -91,7 +91,7 @@ try:
         
         print("\n")  # Add a blank line for readability
 
-        time.sleep(1)  # Delay between readings (in seconds)
+        time.sleep(30)  # Delay between readings (in seconds)
 
 except KeyboardInterrupt:
     print("Measurement stopped by the user.")
