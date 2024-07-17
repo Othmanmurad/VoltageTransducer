@@ -1,7 +1,6 @@
 import time
 import spidev
 import RPi.GPIO as GPIO
-from tabulate import tabulate
 
 # SPI bus and device configuration
 spi_bus = 0
@@ -62,38 +61,16 @@ def read_voltage():
 
     return avg_adc_value, resistor_voltage, current, measured_voltage, scaled_voltage
 
-# Create a table to store the readings
-table_data = []
-headers = ["Timestamp", "ADC Value", "Resistor Voltage (V)", "Current (mA)", "Measured Voltage (V)", "Scaled Voltage (0-10V)"]
+# Print CSV header
+print("Timestamp,ADC Value,Resistor Voltage (V),Current (mA),Measured Voltage (V),Scaled Voltage (0-10V)")
 
 try:
     while True:
         avg_adc_value, resistor_voltage, current, measured_voltage, scaled_voltage = read_voltage()
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
-        # Add the readings to the table
-        table_data.append([
-            timestamp,
-            f"{avg_adc_value:.2f}",
-            f"{resistor_voltage:.4f}",
-            f"{current:.4f}",
-            f"{measured_voltage:.2f}",
-            f"{scaled_voltage:.4f}"
-        ])
-
-        # Print the table
-        print(tabulate(table_data[-10:], headers, tablefmt="grid"))  # Show last 10 readings
-        print(f"Current range: {current_min}-{current_max} mA")
-        print(f"Voltage range: 0-{voltage_range} V")
-        print(f"Scaled voltage range: 0-10 V")
-        
-        # Check if current is within the expected range
-        if current_min <= current <= current_max:
-            print("Current is within the expected range.")
-        else:
-            print("Warning: Current is outside the expected range!")
-        
-        print("\n")  # Add a blank line for readability
+        # Print the readings in CSV format
+        print(f"{timestamp},{avg_adc_value:.2f},{resistor_voltage:.4f},{current:.4f},{measured_voltage:.2f},{scaled_voltage:.4f}")
 
         time.sleep(30)  # Delay between readings (in seconds)
 
