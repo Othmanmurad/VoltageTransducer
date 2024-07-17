@@ -44,17 +44,21 @@ def read_voltage():
 
     avg_adc_value = sum(adc_values) / len(adc_values)
 
-    # Convert average ADC value to voltage
+    # Convert average ADC value to voltage across the resistor
     resistor_voltage = (avg_adc_value / 1023.0) * vref
 
-    # Calculate current from voltage using Ohm's law
-    current = resistor_voltage / resistor_value * 1000  # Convert to mA
+    # Scale the resistor voltage to 0-10V range
+    # 1V corresponds to 4mA, 5V corresponds to 20mA
+    scaled_voltage = (resistor_voltage - 1) * (10 / 4)
 
-    # Scale the current to the measured voltage range (0-500V)
-    measured_voltage = (current - current_min) / (current_max - current_min) * voltage_range
+    # Ensure scaled voltage is within 0-10V range
+    scaled_voltage = max(0, min(scaled_voltage, 10))
 
-    # Scale the measured voltage to 0-10V range
-    scaled_voltage = (measured_voltage / voltage_range) * 10
+    # Calculate current from resistor voltage
+    current = (resistor_voltage / resistor_value) * 1000  # Convert to mA
+
+    # Calculate measured voltage based on current
+    measured_voltage = ((current - 4) / 16) * 500  # 4-20mA maps to 0-500V
 
     return avg_adc_value, resistor_voltage, current, measured_voltage, scaled_voltage
 
