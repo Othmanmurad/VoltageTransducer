@@ -19,7 +19,7 @@ spi.max_speed_hz = 1000000
 
 # MCP3008 configuration
 adc_channel = 0  # Analog input channel (0 to 7)
-vref = 4.4  # Reference voltage (in volts)
+vref = 3.3  # Reference voltage (in volts)
 
 # VACT500-42L configuration
 voltage_range = 500  # VACT500-42L input voltage range (in volts)
