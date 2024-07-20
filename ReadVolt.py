@@ -1,7 +1,7 @@
+
 import time
 import spidev
 import RPi.GPIO as GPIO
-from tabulate import tabulate
 
 # SPI bus and device configuration
 spi_bus = 0
@@ -44,49 +44,36 @@ def read_voltage():
 
     avg_adc_value = sum(adc_values) / len(adc_values)
 
-    # Convert average ADC value to voltage
+    # Convert average ADC value to voltage across the resistor
     resistor_voltage = (avg_adc_value / 1023.0) * vref
 
-    # Calculate current from voltage using Ohm's law
-    current = resistor_voltage / resistor_value * 1000  # Convert to mA
+    # Scale the resistor voltage to 0-10V range
+    # 1V corresponds to 4mA, 5V corresponds to 20mA
+    scaled_voltage = (resistor_voltage - 1) * (10 / 4)
 
-    # Scale the current to the measured voltage range
-    measured_voltage = (current - current_min) / (current_max - current_min) * voltage_range
+    # Ensure scaled voltage is within 0-10V range
+    scaled_voltage = max(0, min(scaled_voltage, 10))
 
-    return avg_adc_value, resistor_voltage, current, measured_voltage
+    # Calculate current from resistor voltage
+    current = (resistor_voltage / resistor_value) * 1000  # Convert to mA
 
-# Create a table to store the readings
-table_data = []
-headers = ["Timestamp", "ADC Value", "Resistor Voltage (V)", "Current (mA)", "Measured Voltage (V)"]
+    # Calculate measured voltage based on current
+    measured_voltage = ((current - 4) / 16) * 500  # 4-20mA maps to 0-500V
+
+    return avg_adc_value, resistor_voltage, current, measured_voltage, scaled_voltage
+
+# Print CSV header
+print("Timestamp,ADC Value,Resistor Voltage (V),Current (mA),Measured Voltage (V),Scaled Voltage (0-10V)")
 
 try:
     while True:
-        avg_adc_value, resistor_voltage, current, measured_voltage = read_voltage()
+        avg_adc_value, resistor_voltage, current, measured_voltage, scaled_voltage = read_voltage()
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 
-        # Add the readings to the table
-        table_data.append([
-            timestamp,
-            f"{avg_adc_value:.2f}",
-            f"{resistor_voltage:.4f}",
-            f"{current:.4f}",
-            f"{measured_voltage:.2f}"
-        ])
+        # Print the readings in CSV format
+        print(f"{timestamp},{avg_adc_value:.2f},{resistor_voltage:.4f},{current:.4f},{measured_voltage:.2f},{scaled_voltage:.4f}")
 
-        # Print the table
-        print(tabulate(table_data[-10:], headers, tablefmt="grid"))  # Show last 10 readings
-        print(f"Current range: {current_min}-{current_max} mA")
-        print(f"Voltage range: 0-{voltage_range} V")
-        
-        # Check if current is within the expected range
-        if current_min <= current <= current_max:
-            print("Current is within the expected range.")
-        else:
-            print("Warning: Current is outside the expected range!")
-        
-        print("\n")  # Add a blank line for readability
-
-        time.sleep(60)  # Delay between readings (in seconds)
+        time.sleep(30)  # Delay between readings (in seconds)
 
 except KeyboardInterrupt:
     print("Measurement stopped by the user.")
