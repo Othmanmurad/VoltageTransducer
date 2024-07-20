@@ -1,7 +1,8 @@
-
 import time
 import spidev
 import RPi.GPIO as GPIO
+import csv
+from datetime import datetime
 
 # SPI bus and device configuration
 spi_bus = 0
@@ -41,7 +42,6 @@ def read_voltage():
     for _ in range(10):
         adc_values.append(read_adc(adc_channel))
         time.sleep(0.01)  # Small delay between readings
-
     avg_adc_value = sum(adc_values) / len(adc_values)
 
     # Convert average ADC value to voltage across the resistor
@@ -62,23 +62,40 @@ def read_voltage():
 
     return avg_adc_value, resistor_voltage, current, measured_voltage, scaled_voltage
 
-# Print CSV header
-print("Timestamp,ADC Value,Resistor Voltage (V),Current (mA),Measured Voltage (V),Scaled Voltage (0-10V)")
+# Open CSV file for writing
+csv_filename = "VTlog.csv"
+csv_file = open(csv_filename, 'w', newline='')
+csv_writer = csv.writer(csv_file)
+
+# Write CSV header
+csv_writer.writerow(["Timestamp", "ADC Value", "Resistor Voltage (V)", "Current (mA)", "Measured Voltage (V)", "Scaled Voltage (0-10V)"])
+
+print(f"Logging data to {csv_filename}")
+print("Press Ctrl+C to stop logging")
 
 try:
     while True:
         avg_adc_value, resistor_voltage, current, measured_voltage, scaled_voltage = read_voltage()
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # Millisecond precision
 
-        # Print the readings in CSV format
+        # Write the readings to CSV file
+        csv_writer.writerow([timestamp, f"{avg_adc_value:.2f}", f"{resistor_voltage:.4f}", 
+                             f"{current:.4f}", f"{measured_voltage:.2f}", f"{scaled_voltage:.4f}"])
+        csv_file.flush()  # Ensure data is written to the file
+
+        # Also print to console
         print(f"{timestamp},{avg_adc_value:.2f},{resistor_voltage:.4f},{current:.4f},{measured_voltage:.2f},{scaled_voltage:.4f}")
 
-        time.sleep(30)  # Delay between readings (in seconds)
+        time.sleep(0.001)  # Delay between readings (in seconds)
 
 except KeyboardInterrupt:
     print("Measurement stopped by the user.")
 
 finally:
+    # Close the CSV file
+    csv_file.close()
     # Close the SPI connection
     spi.close()
     GPIO.cleanup()
+
+print(f"Data saved to {csv_filename}")
