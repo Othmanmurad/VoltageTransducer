@@ -18,6 +18,9 @@ spi.open(spi_bus, spi_device)
 spi.mode = 0
 spi.max_speed_hz = 1000000
 
+# Time delay between each cycle in seconds
+delay = 5
+
 # MCP3008 configuration
 adc_channel = 0  # Analog input channel (0 to 7)
 vref = 3.3  # Reference voltage (in volts) - typically 3.3V for Raspberry Pi
@@ -44,23 +47,24 @@ def read_voltage():
         time.sleep(0.01)  # Small delay between readings
     avg_adc_value = sum(adc_values) / len(adc_values)
 
-    # Convert average ADC value to voltage across the resistor
-    resistor_voltage = (avg_adc_value / 1023.0) * vref
+    # Convert average ADC value to voltage across the resistor which represents
+    # the output DC voltage of the voltage transducer
+    Output_voltage = (avg_adc_value / 1023.0) * vref
 
     # Scale the resistor voltage to 0-10V range
     # 1V corresponds to 4mA, 5V corresponds to 20mA
-    scaled_voltage = (resistor_voltage - 1) * (10 / 4)
+    scaled_voltage = (Output_voltage - 1) * (10 / 4)
 
     # Ensure scaled voltage is within 0-10V range
     scaled_voltage = max(0, min(scaled_voltage, 10))
 
     # Calculate current from resistor voltage
-    current = (resistor_voltage / resistor_value) * 1000  # Convert to mA
+    current = (Output_voltage / resistor_value) * 1000  # Convert to mA
 
     # Calculate measured voltage based on current
-    measured_voltage = ((current - 4) / 16) * 500  # 4-20mA maps to 0-500V
+    Input_voltage = ((current - 4) / 16) * 500  # 4-20mA maps to 0-500V
 
-    return avg_adc_value, resistor_voltage, current, measured_voltage, scaled_voltage
+    return avg_adc_value, Output_voltage, current, Input_voltage, scaled_voltage
 
 # Open CSV file for writing
 csv_filename = "VTlog.csv"
@@ -68,25 +72,25 @@ csv_file = open(csv_filename, 'w', newline='')
 csv_writer = csv.writer(csv_file)
 
 # Write CSV header
-csv_writer.writerow(["Timestamp", "ADC Value", "Resistor Voltage (V)", "Current (mA)", "Measured Voltage (V)", "Scaled Voltage (0-10V)"])
+csv_writer.writerow(["Timestamp", "ADC Value", "Output Voltage (V)", "Current (mA)", "Input Voltage (V)", "Scaled Voltage (0-10V)"])
 
 print(f"Logging data to {csv_filename}")
 print("Press Ctrl+C to stop logging")
 
 try:
     while True:
-        avg_adc_value, resistor_voltage, current, measured_voltage, scaled_voltage = read_voltage()
+        avg_adc_value, Output_voltage, current, Input_voltage, scaled_voltage = read_voltage()
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]  # Millisecond precision
 
         # Write the readings to CSV file
-        csv_writer.writerow([timestamp, f"{avg_adc_value:.2f}", f"{resistor_voltage:.4f}", 
-                             f"{current:.4f}", f"{measured_voltage:.2f}", f"{scaled_voltage:.4f}"])
+        csv_writer.writerow([timestamp, f"{avg_adc_value:.2f}", f"{Output_voltage:.4f}", 
+                             f"{current:.4f}", f"{Input_voltage:.2f}", f"{scaled_voltage:.4f}"])
         csv_file.flush()  # Ensure data is written to the file
 
         # Also print to console
-        print(f"{timestamp},{avg_adc_value:.2f},{resistor_voltage:.4f},{current:.4f},{measured_voltage:.2f},{scaled_voltage:.4f}")
+        print(f"{timestamp},{avg_adc_value:.2f},{Output_voltage:.4f},{current:.4f},{Input_voltage:.2f},{scaled_voltage:.4f}")
 
-        time.sleep(0.001)  # Delay between readings (in seconds)
+        time.sleep(delay)  # Delay between readings (in seconds)
 
 except KeyboardInterrupt:
     print("Measurement stopped by the user.")
