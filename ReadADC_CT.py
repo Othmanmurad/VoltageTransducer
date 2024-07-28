@@ -9,7 +9,7 @@ import numpy as np
 # Set up MCP3008
 spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
 cs = digitalio.DigitalInOut(board.D5)
-mcp = MCP3008(spi, cs)
+mcp = MCP.MCP3008(spi, cs)  # Corrected this line
 
 # Set up the current channel
 current_channel = AnalogIn(mcp, MCP.P1)
