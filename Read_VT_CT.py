@@ -80,4 +80,16 @@ def update(frame):
 ani = FuncAnimation(fig, update, frames=range(100), interval=100, blit=True)
 
 # Print header
-print("V_RMS, I_RMS, A
+print("V_RMS, I_RMS, Apparent Power, Active Power, Reactive Power, Power Factor, Phase Angle")
+
+# If you want to print values as well
+while True:
+    voltages, currents = read_signals()
+    v_rms, i_rms, apparent_power, active_power, reactive_power, power_factor, phase_angle = calculate_power_parameters(voltages, currents)
+    
+    # Print values in comma-separated format
+    print(f"{v_rms:.3f}, {i_rms:.3f}, {apparent_power:.3f}, {active_power:.3f}, {reactive_power:.3f}, {power_factor:.3f}, {np.degrees(phase_angle):.3f}")
+    
+    time.sleep(1)
+
+plt.show()
