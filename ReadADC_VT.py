@@ -23,8 +23,12 @@ def read_voltage():
 
 def calculate_mains_voltage(sensor_rms_voltage):
     mains_calibration_factor = EXPECTED_MAINS_VOLTAGE / sensor_rms_voltage
-    mains_voltage = sensor_rms_voltage * mains_calibration_factor
-    return mains_voltage, mains_calibration_factor
+    return mains_calibration_factor
+
+# Calculate initial calibration factor
+_, initial_sensor_voltage = read_voltage()
+initial_sensor_rms = initial_sensor_voltage / np.sqrt(2)
+MAINS_CALIBRATION_FACTOR = calculate_mains_voltage(initial_sensor_rms)
 
 # Print header
 print("Raw ADC, Sensor Peak Voltage, Sensor RMS Voltage, Mains Peak Voltage, Mains RMS Voltage, Calibration Factor")
@@ -33,10 +37,10 @@ while True:
     raw_value, sensor_voltage = read_voltage()
     rms_sensor_voltage = sensor_voltage / np.sqrt(2)
     
-    mains_rms_voltage, current_calibration_factor = calculate_mains_voltage(rms_sensor_voltage)
+    mains_rms_voltage = rms_sensor_voltage * MAINS_CALIBRATION_FACTOR
     mains_peak_voltage = mains_rms_voltage * np.sqrt(2)
     
     # Print values in comma-separated format
-    print(f"{raw_value:.0f}, {sensor_voltage:.3f}, {rms_sensor_voltage:.3f}, {mains_peak_voltage:.1f}, {mains_rms_voltage:.1f}, {current_calibration_factor:.2f}")
+    print(f"{raw_value:.0f}, {sensor_voltage:.3f}, {rms_sensor_voltage:.3f}, {mains_peak_voltage:.1f}, {mains_rms_voltage:.1f}, {MAINS_CALIBRATION_FACTOR:.2f}")
     
     time.sleep(1)
