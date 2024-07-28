@@ -15,13 +15,12 @@ mcp = MCP.MCP3008(spi, cs)
 current_channel = AnalogIn(mcp, MCP.P1)
 
 # Constants
-SAMPLES = 100  # Number of samples to take for each measurement
-VCC = 3.3  # Supply voltage to MCP3008
-CT_BURDEN_RESISTOR = 220  # Burden resistor value in ohms
-CT_TURNS = 2000  # Number of turns in the current transformer
-
-# You may need to adjust this based on your specific current transformer
-CT_CALIBRATION_FACTOR = 1.0  
+SAMPLES = 100
+VCC = 3.3
+CT_BURDEN_RESISTOR = 220
+CT_TURNS = 2000
+CT_CALIBRATION_FACTOR = 1.5  # Adjust this based on your calibration
+                             # Ammeter reading / Current RMS = Calb.Factor
 
 def read_current():
     samples = [current_channel.value for _ in range(SAMPLES)]
@@ -29,17 +28,24 @@ def read_current():
     voltage = (avg_raw / 65535) * VCC
     
     # Convert voltage to current
-    primary_current = (voltage / CT_BURDEN_RESISTOR) * CT_TURNS * CT_CALIBRATION_FACTOR
-    return avg_raw, voltage, primary_current
+    sensor_current = (voltage / CT_BURDEN_RESISTOR) * CT_TURNS
+    return avg_raw, sensor_current
 
 # Print header
-print("Raw ADC, Sensor Voltage, RMS Current")
+print("Raw ADC, Sensor Peak Current, Sensor RMS Current, Mains Peak Current, Mains RMS Current")
 
 while True:
-    raw_value, sensor_voltage, primary_current = read_current()
-    rms_current = primary_current / np.sqrt(2)
+    raw_value, sensor_current = read_current()
+    
+    # Calculate peak and RMS values
+    sensor_peak_current = sensor_current
+    sensor_rms_current = sensor_peak_current / np.sqrt(2)
+    
+    # Apply calibration factor to get mains current
+    mains_peak_current = sensor_peak_current * CT_CALIBRATION_FACTOR
+    mains_rms_current = mains_peak_current / np.sqrt(2)
     
     # Print values in comma-separated format
-    print(f"{raw_value:.0f}, {sensor_voltage:.3f}, {rms_current:.3f}")
+    print(f"{raw_value:.0f}, {sensor_peak_current:.3f}, {sensor_rms_current:.3f}, {mains_peak_current:.3f}, {mains_rms_current:.3f}")
     
     time.sleep(1)
