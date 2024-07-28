@@ -17,40 +17,31 @@ current_channel = AnalogIn(mcp, MCP.P1)
 # Constants
 SAMPLES = 100
 VCC = 3.3
-CT_BURDEN_RESISTOR = 220
-CT_TURNS = 2000
 EXPECTED_RMS_CURRENT = 0.48  # The expected RMS current from your ammeter
+ADC_MAX = 65535  # Maximum value of the ADC
 
-def read_current():
+def read_adc():
     samples = [current_channel.value for _ in range(SAMPLES)]
-    avg_raw = np.mean(samples)
-    voltage = (avg_raw / 65535) * VCC
-    return avg_raw, voltage
-
-# Calibration
-def calibrate():
-    _, voltage = read_current()
-    sensor_current = voltage / CT_BURDEN_RESISTOR
-    sensor_rms_current = sensor_current / np.sqrt(2)
-    return EXPECTED_RMS_CURRENT / sensor_rms_current
-
-CT_CALIBRATION_FACTOR = calibrate()
+    return np.mean(samples)
 
 # Print header
-print("Raw ADC, Sensor Peak Current, Sensor RMS Current, Mains Peak Current, Mains RMS Current, Calibration Factor")
+print("Raw ADC, ADC Voltage, Calculated Current, Calibration Factor")
+
+# Initialize calibration factor
+calibration_factor = 1.0
 
 while True:
-    raw_value, voltage = read_current()
+    raw_adc = read_adc()
+    adc_voltage = (raw_adc / ADC_MAX) * VCC
     
-    # Calculate sensor current
-    sensor_peak_current = (voltage / CT_BURDEN_RESISTOR) * CT_TURNS
-    sensor_rms_current = sensor_peak_current / np.sqrt(2)
+    # Calculate current using the calibration factor
+    calculated_current = adc_voltage * calibration_factor
     
-    # Apply calibration factor to get mains current
-    mains_peak_current = sensor_peak_current * CT_CALIBRATION_FACTOR
-    mains_rms_current = mains_peak_current / np.sqrt(2)
+    # Adjust calibration factor
+    if abs(calculated_current - EXPECTED_RMS_CURRENT) > 0.01:  # If off by more than 0.01A
+        calibration_factor = EXPECTED_RMS_CURRENT / adc_voltage
     
     # Print values in comma-separated format
-    print(f"{raw_value:.0f}, {sensor_peak_current:.3f}, {sensor_rms_current:.3f}, {mains_peak_current:.3f}, {mains_rms_current:.3f}, {CT_CALIBRATION_FACTOR:.4f}")
+    print(f"{raw_adc:.0f}, {adc_voltage:.4f}, {calculated_current:.4f}, {calibration_factor:.4f}")
     
     time.sleep(1)
