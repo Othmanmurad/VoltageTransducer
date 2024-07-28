@@ -12,23 +12,31 @@ mcp = MCP.MCP3008(spi, cs)
 voltage_channel = AnalogIn(mcp, MCP.P0)
 
 CALIBRATION_FACTOR = 1.99  # Adjust this based on your previous calibration
-MAINS_CALIBRATION_FACTOR = 120 / 2.35  # Adjust this based on your voltage transformer ratio
+EXPECTED_MAINS_VOLTAGE = 120  # Expected RMS mains voltage
 SAMPLES = 100  # Number of samples to take for each measurement
 
 def read_voltage():
     samples = [voltage_channel.value for _ in range(SAMPLES)]
     avg_raw = np.mean(samples)
     sensor_voltage = (avg_raw / 65535) * 3.3 * CALIBRATION_FACTOR
-    mains_voltage = sensor_voltage * MAINS_CALIBRATION_FACTOR
-    return avg_raw, sensor_voltage, mains_voltage
+    return avg_raw, sensor_voltage
+
+def calculate_mains_voltage(sensor_rms_voltage):
+    mains_calibration_factor = EXPECTED_MAINS_VOLTAGE / sensor_rms_voltage
+    mains_voltage = sensor_rms_voltage * mains_calibration_factor
+    return mains_voltage, mains_calibration_factor
+
+# Print header
+print("Raw ADC, Sensor Peak Voltage, Sensor RMS Voltage, Mains Peak Voltage, Mains RMS Voltage, Calibration Factor")
 
 while True:
-    raw_value, sensor_voltage, mains_voltage = read_voltage()
+    raw_value, sensor_voltage = read_voltage()
     rms_sensor_voltage = sensor_voltage / np.sqrt(2)
-    rms_mains_voltage = mains_voltage / np.sqrt(2)
     
-    print(f"Raw ADC: {raw_value:.0f}")
-    print(f"Sensor Peak Voltage: {sensor_voltage:.3f}V, Sensor RMS Voltage: {rms_sensor_voltage:.3f}V")
-    print(f"Mains Peak Voltage: {mains_voltage:.1f}V, Mains RMS Voltage: {rms_mains_voltage:.1f}V")
-    print("--------------------")
+    mains_rms_voltage, current_calibration_factor = calculate_mains_voltage(rms_sensor_voltage)
+    mains_peak_voltage = mains_rms_voltage * np.sqrt(2)
+    
+    # Print values in comma-separated format
+    print(f"{raw_value:.0f}, {sensor_voltage:.3f}, {rms_sensor_voltage:.3f}, {mains_peak_voltage:.1f}, {mains_rms_voltage:.1f}, {current_calibration_factor:.2f}")
+    
     time.sleep(1)
