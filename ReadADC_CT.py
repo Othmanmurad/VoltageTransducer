@@ -44,3 +44,8 @@ while True:
     print(f"{raw_adc:.0f}, {sensor_peak_current:.4f}, {sensor_rms_current:.4f}, {mains_peak_current:.4f}, {mains_rms_current:.4f}")
     
     time.sleep(1)
+
+
+# Calibration steps if changed the load
+# NEW_FACTOR = (AMMETER_READING / CODE_READING) * CURRENT_FACTOR
+# NEW_FACTOR = (1.72 / 0.825) * 0.2535 ≈ 0.5284
