@@ -26,10 +26,7 @@ VCC = 3.3
 ADC_MAX = 65535
 MAINS_FREQUENCY = 60  # Hz
 VOLTAGE_CALIBRATION_FACTOR = 71.7
-
-# Current transformer specifications
-CT_BURDEN_RESISTOR = 220  # ohms
-CT_TURNS_RATIO = 2000  # For example, if it's a 100A:50mA CT
+CURRENT_CALIBRATION_FACTOR = 0.5284  # Initial value, to be adjusted
 
 def read_signals():
     voltage_samples = []
@@ -56,9 +53,7 @@ def read_signals():
     print(f"Actual sample rate: {actual_sample_rate:.2f} Hz")
 
     voltages = np.array(voltage_samples) / ADC_MAX * VCC * VOLTAGE_CALIBRATION_FACTOR
-    
-    # Convert ADC readings to current
-    currents = np.array(current_samples) / ADC_MAX * VCC / CT_BURDEN_RESISTOR * CT_TURNS_RATIO
+    currents = np.array(current_samples) / ADC_MAX * VCC * CURRENT_CALIBRATION_FACTOR
     
     return voltages, currents, np.mean(voltage_samples), np.mean(current_samples), timestamps
 
@@ -71,6 +66,13 @@ def calculate_power_parameters(voltages, currents):
     phase_angle = np.arccos(power_factor)
     reactive_power = apparent_power * np.sin(phase_angle)
     return v_rms, i_rms, apparent_power, active_power, reactive_power, power_factor, phase_angle
+
+def calibrate_current(actual_current):
+    global CURRENT_CALIBRATION_FACTOR
+    _, currents, _, _, _ = read_signals()
+    measured_current = np.sqrt(np.mean(currents**2))
+    CURRENT_CALIBRATION_FACTOR *= actual_current / measured_current
+    print(f"New current calibration factor: {CURRENT_CALIBRATION_FACTOR:.4f}")
 
 # Set up the plot
 fig, ax = plt.subplots(figsize=(10, 6))
@@ -103,12 +105,7 @@ while True:
     # Print values in comma-separated format
     print(f"{raw_voltage:.0f}, {raw_current:.0f}, {v_rms:.3f}, {i_rms:.3f}, {apparent_power:.3f}, {active_power:.3f}, {reactive_power:.3f}, {power_factor:.3f}, {np.degrees(phase_angle):.3f}")
     
+    # Uncomment the following line and replace X.XX with the actual current reading from your ammeter to calibrate
+    # calibrate_current(X.XX)
+    
     time.sleep(1)  # Wait before the next round of sampling
-
-# To calibrate current:
-# 1. Measure actual current with a clamp meter at a specific moment
-# 2. Note the reported I_RMS from this script at the same moment
-# 3. Adjust CT_BURDEN_RESISTOR or CT_TURNS_RATIO if needed:
-#    CT_BURDEN_RESISTOR = (REPORTED_I_RMS / ACTUAL_CURRENT) * CURRENT_CT_BURDEN_RESISTOR
-#    or
-#    CT_TURNS_RATIO = (ACTUAL_CURRENT / REPORTED_I_RMS) * CURRENT_CT_TURNS_RATIO
