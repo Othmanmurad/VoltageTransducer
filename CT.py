@@ -1,55 +1,34 @@
-import time
 import board
 import busio
-import digitalio
-import adafruit_mcp3xxx.mcp3008 as MCP
-from adafruit_mcp3xxx.analog_in import AnalogIn
-import numpy as np
+import adafruit_ads1x15.ads1115 as ADS
+from adafruit_ads1x15.analog_in import AnalogIn
 
-# Set up MCP3008
-spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
-cs = digitalio.DigitalInOut(board.D5)
-mcp = MCP.MCP3008(spi, cs)
+def run_i2c():
+     
+    while True:
+        
+        try:
+            
+            i2c = busio.I2C(board.SCL, board.SDA)
+            ads = ADS.ADS1115(i2c)
+            chan = AnalogIn(ads, ADS.P0)
+           
+            p_voltage =  chan.voltage
+            p_voltage = round(p_voltage, 3)
+                        
+            print("{:>5.3f}".format(chan.voltage))
+            time.sleep(1)
+            
+            current = ((p_voltage-2.5)/0.625)*10
+            
+            print ("Current =", current)
+            
+            
+        except:
+            
+            
+            continue
+               
+run_i2c()
 
-# Set up the current channel
-current_channel = AnalogIn(mcp, MCP.P1)
-
-# Constants
-SAMPLES = 1000
-VCC = 5.0
-ADC_MAX = 65535
-SENSOR_ZERO_VOLTAGE = 2.5  # We'll calibrate this
-SENSOR_SENSITIVITY = 0.0417  # V/A
-
-def read_voltage():
-    samples = [current_channel.value for _ in range(SAMPLES)]
-    avg_raw = np.mean(samples)
-    return (avg_raw / ADC_MAX) * VCC
-
-def calibrate_zero():
-    print("Ensuring no current is flowing, then press Enter to calibrate zero point...")
-    input()
-    global SENSOR_ZERO_VOLTAGE
-    SENSOR_ZERO_VOLTAGE = read_voltage()
-    print(f"Zero point calibrated to {SENSOR_ZERO_VOLTAGE:.4f}V")
-
-def voltage_to_current(voltage):
-    return (voltage - SENSOR_ZERO_VOLTAGE) / SENSOR_SENSITIVITY
-
-# Calibrate zero point
-calibrate_zero()
-
-# Print header
-print("Raw ADC, Sensor Voltage, RMS Current")
-
-while True:
-    raw_adc = current_channel.value
-    adc_voltage = read_voltage()
-    
-    # Calculate current
-    rms_current = voltage_to_current(adc_voltage)
-    
-    # Print values in comma-separated format
-    print(f"{raw_adc:.0f}, {adc_voltage:.4f}, {rms_current:.4f}")
-    
-    time.sleep(1)
+        #ads.stopadc()      
