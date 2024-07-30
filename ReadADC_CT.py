@@ -16,7 +16,7 @@ current_channel = AnalogIn(mcp, MCP.P1)
 
 # Constants
 SAMPLES = 100
-VCC = 3.3
+VCC = 5.0
 ADC_MAX = 65535
 CALIBRATION_FACTOR = 0.2535  # Use the value we found
 
