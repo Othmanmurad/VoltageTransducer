@@ -18,23 +18,33 @@ current_channel = AnalogIn(mcp, MCP.P1)
 SAMPLES = 1000
 VCC = 5.0
 ADC_MAX = 65535
-SENSOR_ZERO_VOLTAGE = 2.5  # Voltage output at 0A
+SENSOR_ZERO_VOLTAGE = 2.5  # We'll calibrate this
 SENSOR_SENSITIVITY = 0.0417  # V/A
 
-def read_current():
+def read_voltage():
     samples = [current_channel.value for _ in range(SAMPLES)]
     avg_raw = np.mean(samples)
-    adc_voltage = (avg_raw / ADC_MAX) * VCC
-    return avg_raw, adc_voltage
+    return (avg_raw / ADC_MAX) * VCC
+
+def calibrate_zero():
+    print("Ensuring no current is flowing, then press Enter to calibrate zero point...")
+    input()
+    global SENSOR_ZERO_VOLTAGE
+    SENSOR_ZERO_VOLTAGE = read_voltage()
+    print(f"Zero point calibrated to {SENSOR_ZERO_VOLTAGE:.4f}V")
 
 def voltage_to_current(voltage):
     return (voltage - SENSOR_ZERO_VOLTAGE) / SENSOR_SENSITIVITY
+
+# Calibrate zero point
+calibrate_zero()
 
 # Print header
 print("Raw ADC, Sensor Voltage, RMS Current")
 
 while True:
-    raw_adc, adc_voltage = read_current()
+    raw_adc = current_channel.value
+    adc_voltage = read_voltage()
     
     # Calculate current
     rms_current = voltage_to_current(adc_voltage)
