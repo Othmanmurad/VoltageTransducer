@@ -25,8 +25,18 @@ VCC = 3.3
 ADC_MAX = 65535
 MAINS_FREQUENCY = 60  # Hz
 VOLTAGE_CALIBRATION_FACTOR = 71.7
-CURRENT_CALIBRATION_FACTOR = 0.2535 / 2  # Halved to address ADC saturation
-CURRENT_THRESHOLD = 0.1  # Adjust based on your observations
+CURRENT_CALIBRATION_FACTOR = 0.2535 / 4  # Further reduced to address ADC saturation
+CURRENT_THRESHOLD = 0.05  # Adjusted threshold
+
+# Variables for offset correction
+OFFSET_SAMPLES = 1000
+current_offset = 0
+
+def calculate_current_offset():
+    global current_offset
+    offset_readings = [current_channel.value for _ in range(OFFSET_SAMPLES)]
+    current_offset = np.mean(offset_readings)
+    print(f"Calculated current offset: {current_offset}")
 
 def read_signals():
     voltage_samples = []
@@ -34,7 +44,7 @@ def read_signals():
     start_time = time.monotonic()
     for _ in range(SAMPLES):
         voltage_samples.append(voltage_channel.value)
-        current_samples.append(current_channel.value)
+        current_samples.append(max(0, current_channel.value - current_offset))
         while time.monotonic() - start_time < 1/SAMPLE_RATE:
             pass
         start_time += 1/SAMPLE_RATE
@@ -70,6 +80,9 @@ ax1.grid(True)
 ax2.set_xlabel('Time (minutes)')
 ax2.set_ylabel('Current (A)')
 ax2.grid(True)
+
+print("Calculating current offset...")
+calculate_current_offset()
 
 print("Raw V ADC, Raw I ADC, V_RMS, I_RMS, Apparent Power, Active Power, Reactive Power, Power Factor, Phase Angle")
 
