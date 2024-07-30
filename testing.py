@@ -25,10 +25,8 @@ VCC = 3.3
 ADC_MAX = 65535
 MAINS_FREQUENCY = 60  # Hz
 VOLTAGE_CALIBRATION_FACTOR = 71.7
-CURRENT_CALIBRATION_FACTOR = 0.2535
-
-# New constant for current threshold
-CURRENT_THRESHOLD = 0.1  # Adjust this value based on your observations
+CURRENT_CALIBRATION_FACTOR = 0.2535 / 2  # Halved to address ADC saturation
+CURRENT_THRESHOLD = 0.1  # Adjust based on your observations
 
 def read_signals():
     voltage_samples = []
@@ -120,4 +118,4 @@ while True:
     # Print values in comma-separated format
     print(f"{raw_voltage:.0f}, {raw_current:.0f}, {v_rms:.3f}, {i_rms:.3f}, {apparent_power:.3f}, {active_power:.3f}, {reactive_power:.3f}, {power_factor:.3f}, {np.degrees(phase_angle):.3f}")
     
-    time.sleep(30)  # Wait for 30 seconds before next reading
+    time.sleep(60)  # Wait for 1 minute before next reading
