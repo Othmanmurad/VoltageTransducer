@@ -25,8 +25,8 @@ VCC = 3.3
 ADC_MAX = 65535
 MAINS_FREQUENCY = 60  # Hz
 VOLTAGE_CALIBRATION_FACTOR = 71.7
-CURRENT_CALIBRATION_FACTOR = 0.2535 / 4  # Further reduced to address ADC saturation
-CURRENT_THRESHOLD = 0.05  # Adjusted threshold
+CURRENT_CALIBRATION_FACTOR = 0.2535  # Reset to original value
+CURRENT_THRESHOLD = 0.01  # Lowered threshold to detect smaller currents
 
 # Variables for offset correction
 OFFSET_SAMPLES = 1000
@@ -44,7 +44,8 @@ def read_signals():
     start_time = time.monotonic()
     for _ in range(SAMPLES):
         voltage_samples.append(voltage_channel.value)
-        current_samples.append(max(0, current_channel.value - current_offset))
+        current_sample = current_channel.value - current_offset
+        current_samples.append(current_sample if current_sample > 0 else 0)
         while time.monotonic() - start_time < 1/SAMPLE_RATE:
             pass
         start_time += 1/SAMPLE_RATE
@@ -61,15 +62,26 @@ def calculate_power_parameters(voltages, currents):
     v_rms = np.sqrt(np.mean(voltages**2))
     i_rms = np.sqrt(np.mean(currents**2))
     
-    # Apply threshold to current
-    i_rms = i_rms if i_rms > CURRENT_THRESHOLD else 0
+    if i_rms > CURRENT_THRESHOLD:
+        apparent_power = v_rms * i_rms
+        active_power = np.mean(voltages * currents)
+        power_factor = active_power / apparent_power if apparent_power != 0 else 0
+        phase_angle = np.arccos(power_factor)
+        reactive_power = apparent_power * np.sin(phase_angle)
+    else:
+        apparent_power = active_power = reactive_power = power_factor = phase_angle = 0
     
-    apparent_power = v_rms * i_rms
-    active_power = np.mean(voltages * currents)
-    power_factor = active_power / apparent_power if apparent_power != 0 else 0
-    phase_angle = np.arccos(power_factor)
-    reactive_power = apparent_power * np.sin(phase_angle)
     return v_rms, i_rms, apparent_power, active_power, reactive_power, power_factor, phase_angle
+
+def calibrate_current(actual_current):
+    global CURRENT_CALIBRATION_FACTOR
+    _, currents, _, _ = read_signals()
+    measured_current = np.sqrt(np.mean(currents**2))
+    if measured_current > 0:
+        CURRENT_CALIBRATION_FACTOR *= actual_current / measured_current
+        print(f"New current calibration factor: {CURRENT_CALIBRATION_FACTOR:.6f}")
+    else:
+        print("Error: Measured current is zero. Cannot calibrate.")
 
 # Set up the plot
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
@@ -130,5 +142,8 @@ while True:
     
     # Print values in comma-separated format
     print(f"{raw_voltage:.0f}, {raw_current:.0f}, {v_rms:.3f}, {i_rms:.3f}, {apparent_power:.3f}, {active_power:.3f}, {reactive_power:.3f}, {power_factor:.3f}, {np.degrees(phase_angle):.3f}")
+    
+    # Uncomment the following line and replace X.XX with your ammeter reading to calibrate when the heat pump is active
+    # calibrate_current(X.XX)
     
     time.sleep(60)  # Wait for 1 minute before next reading
