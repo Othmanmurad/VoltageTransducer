@@ -15,17 +15,18 @@ cs = digitalio.DigitalInOut(board.D5)
 mcp = MCP.MCP3008(spi, cs)
 
 # Set up the voltage and current channels
-voltage_channel = AnalogIn(mcp, MCP.P0)
-current_channel = AnalogIn(mcp, MCP.P1)
+voltage_channel = AnalogIn(mcp, MCP.P1)
+current_channel = AnalogIn(mcp, MCP.P0)
 
 # Constants
 SAMPLES = 1000
 SAMPLE_RATE = 1000  # Hz
 VCC = 3.3
+ICC = 5.0
 ADC_MAX = 65535
 MAINS_FREQUENCY = 60  # Hz
 VOLTAGE_CALIBRATION_FACTOR = 71.7  # Adjusted based on actual measurements
-CURRENT_CALIBRATION_FACTOR = 0.2535
+CURRENT_CALIBRATION_FACTOR = 5.0
 
 def read_signals():
     voltage_samples = []
@@ -42,7 +43,7 @@ def read_signals():
     raw_current = np.mean(current_samples)
     
     voltages = np.array(voltage_samples) / ADC_MAX * VCC * VOLTAGE_CALIBRATION_FACTOR
-    currents = np.array(current_samples) / ADC_MAX * VCC * CURRENT_CALIBRATION_FACTOR
+    currents = np.array(current_samples) / ADC_MAX * ICC * CURRENT_CALIBRATION_FACTOR
     
     return voltages, currents, raw_voltage, raw_current
 
